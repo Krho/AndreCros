@@ -1,6 +1,7 @@
 # coding: utf-8
 import bs4
 import codecs
+import collections
 import urllib
 import re
 import logging
@@ -101,7 +102,7 @@ def flush(tree):
             logging.error(e)
 
 def main():
-    result={}
+    result=collections.OrderedDict()
     for i in range(FIRST,LAST):
         logging.info("Reading notice %d", i)
         notice = read(i)
