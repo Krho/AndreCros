@@ -108,7 +108,7 @@ def main():
         notice = read(i)
         if notice is not None:
             result["53Fi"+str(i)] = notice
-        if i % 25 is 0:
+        if i % 25 is 0 or i == LAST:
             flush(result)
 
 if __name__ == "__main__":
