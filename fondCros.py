@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 
 logging.basicConfig(level=logging.INFO)
 
-FIRST = 338
+FIRST = 1
 LAST = 7118
 
 IMAGE_URL_PREFIX = "http://basededonnees.archives.toulouse.fr/images/docfig/53Fi/FRAC31555_53Fi"
@@ -20,6 +20,31 @@ NOTICE_ID = "tableau_notice"
 
 DATE_REGEX = "[0-9]+\.[0-9]+\.[0-9]+"
 
+def mapping(s):
+    map = {
+        u"Type document :": "type",
+        u"Technique :": "technique",
+        u"Format :": "format",
+        u"Support :": "support",
+        u"Etat matériel :": "material_condition",
+        u"Série :": "series",
+        u"Sous-série :": "sub_series",
+        u"Producteur :": "producer",
+        u"Plan de classement :": "order",
+        u"Origine du document :": "origin",
+        u"Mode d'entrée :": "entry_mode",
+        u"Année d'entrée :": "entry_year",
+        u"Droits :": "rights",
+        u"Original Consultable :": "original_consultable",
+        u"Observations :": "observation",
+        u"Termes d'indexation :": "indexation",
+        u"Période historique :": "historical_period",
+    }
+    return map.get(s, s)
+
+def text(s):
+    return unicode(s.string).strip()
+
 def read(i):
     sock = urllib.urlopen(NOTICE_URL_PREFIX+str(i)+NOTICE_URL_SUFFIX)
     htmlSource = sock.read()
@@ -29,6 +54,9 @@ def read(i):
     result={}
     # title
     title = content.find_all('p')[1].string
+    if title is None:
+        logging.warn("Unable to parse notice %d", i)
+        return None
     parts = re.split(" - ", title)
     key = parts[0]
     result["title"]=parts[1]
@@ -40,26 +68,27 @@ def read(i):
         result["year"]="19"+p[2]
     spans = content.find_all('span')
     if spans is not None:
-        result["description"] = spans[0].string
-        result["type"]=spans[5].string
-        result["technique"]=spans[7].string
-        formats = re.split(" x ", spans[9].string)
-        if formats is not None and len(formats) > 1:
-            result["height"]=formats[0]
-            result["width"]=formats[1]
-        else:
-            result["format"]=spans[9].string
-        result["support"] = spans[11].string
-        if len(spans)>22:
-            order = re.split(">", spans[22].string)
-            if len(order)>2:
-                result["order"] = re.split(">", spans[22].string)[-2]
-            else:
-                result["order"] = spans[22].string
-            result["origin"] = spans[24].string
-            result["observation"] = spans[34].string
-        if len(spans)>36:
-            result["indexation"] = [v.string for v in spans[36].find_all("a")]
+        for i in range(0, len(spans)):
+            if i == 0:
+                result["description"] = text(spans[i])
+            elif i < len(spans)-1 and spans[i]["class"][0] == "titre" and spans[i+1]["class"][0] == "result":
+                if "Format :" == text(spans[i]):
+                    formats = re.split(" x ", text(spans[i+1]).strip(" cm"), flags=re.IGNORECASE)
+                    if formats is not None and len(formats) > 1:
+                        result["height"] = formats[0]
+                        result["width"] = formats[1]
+                    else:
+                        result[mapping(text(spans[i]))] = text(spans[i+1])
+                elif "Plan de classement :" == text(spans[i]):
+                    order = re.split(">", text(spans[i+1]))
+                    if len(order)>2:
+                        result[mapping(text(spans[i]))] = re.split(">", text(spans[i+1]))[-2].strip()
+                    else:
+                        result[mapping(text(spans[i]))] = text(spans[i+1])
+                elif "Termes d'indexation :" == text(spans[i]):
+                    result[mapping(text(spans[i]))] = [v.string.strip() for v in spans[i+1].find_all("a")]
+                else:
+                    result[mapping(text(spans[i]))] = text(spans[i+1])
     return result
 
 def flush(tree):
@@ -74,7 +103,9 @@ def main():
     result={}
     for i in range(FIRST,LAST):
         logging.info("Reading notice %d", i)
-        result["53Fi"+str(i)] = read(i)
+        notice = read(i)
+        if notice is not None:
+            result["53Fi"+str(i)] = notice
         if i % 25 is 0:
             flush(result)
 
