@@ -6,7 +6,7 @@ import urllib
 import re
 import logging
 import json
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, SoupStrainer
 
 logging.basicConfig(level=logging.INFO)
 
@@ -51,7 +51,7 @@ def read(i):
     sock = urllib.urlopen(NOTICE_URL_PREFIX+str(i)+NOTICE_URL_SUFFIX)
     htmlSource = sock.read()
     sock.close()
-    soup = BeautifulSoup(htmlSource, 'html.parser')
+    soup = BeautifulSoup(htmlSource, 'html.parser', parse_only=SoupStrainer(id=NOTICE_ID))
     content = soup.find(id=NOTICE_ID)
     result={}
     # title
