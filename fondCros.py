@@ -103,7 +103,7 @@ def flush(tree):
 
 def main():
     result=collections.OrderedDict()
-    for i in range(FIRST,LAST):
+    for i in range(FIRST,LAST+1):
         logging.info("Reading notice %d", i)
         notice = read(i)
         if notice is not None:
