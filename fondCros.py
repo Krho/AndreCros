@@ -1,12 +1,13 @@
 # coding: utf-8
 import bs4
+import codecs
 import urllib
 import re
 import logging
 import json
 from bs4 import BeautifulSoup
 
-LOG = logging.getLogger("categories")
+logging.basicConfig(level=logging.INFO)
 
 FIRST = 338
 LAST = 7118
@@ -62,14 +63,17 @@ def read(i):
     return result
 
 def flush(tree):
-    LOG.info("Writting")
-    with open ("tree.json", "w") as data:
-        json.dump(tree, data, indent=2)
+    logging.info("Writing")
+    with codecs.open("tree.json", "w", encoding="utf-8") as data:
+        try:
+            json.dump(tree, data, indent=2, ensure_ascii=False)
+        except BaseException as e:
+            logging.error(e)
 
 def main():
     result={}
     for i in range(FIRST,LAST):
-        LOG.info("Reading notice %d",i)
+        logging.info("Reading notice %d", i)
         result["53Fi"+str(i)] = read(i)
         if i % 25 is 0:
             flush(result)
