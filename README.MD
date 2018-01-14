@@ -8,5 +8,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## See also
 
-* [https://meta.wikimedia.org/wiki/Wikim%C3%A9dia_France/Toulouse/Andr%C3%A9_Cros](Project page on Wikimedia Meta)
+* [Project page on Wikimedia Meta](https://meta.wikimedia.org/wiki/Wikimédia_France/Toulouse/André_Cros)
 
