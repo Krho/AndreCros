@@ -1,11 +1,12 @@
 # coding: utf-8
 import bs4
 import codecs
+import collections
 import urllib
 import re
 import logging
 import json
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, SoupStrainer
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,6 +23,7 @@ DATE_REGEX = "[0-9]+\.[0-9]+\.[0-9]+"
 
 def mapping(s):
     map = {
+        u"Auteur(s) :": "authors",
         u"Type document :": "type",
         u"Technique :": "technique",
         u"Format :": "format",
@@ -49,7 +51,7 @@ def read(i):
     sock = urllib.urlopen(NOTICE_URL_PREFIX+str(i)+NOTICE_URL_SUFFIX)
     htmlSource = sock.read()
     sock.close()
-    soup = BeautifulSoup(htmlSource, 'html.parser')
+    soup = BeautifulSoup(htmlSource, 'html.parser', parse_only=SoupStrainer(id=NOTICE_ID))
     content = soup.find(id=NOTICE_ID)
     result={}
     # title
@@ -71,7 +73,7 @@ def read(i):
         for i in range(0, len(spans)):
             if i == 0:
                 result["description"] = text(spans[i])
-            elif i < len(spans)-1 and spans[i]["class"][0] == "titre" and spans[i+1]["class"][0] == "result":
+            elif i < len(spans)-1 and spans[i]["class"][0] == "titre":
                 if "Format :" == text(spans[i]):
                     formats = re.split(" x ", text(spans[i+1]).strip(" cm"), flags=re.IGNORECASE)
                     if formats is not None and len(formats) > 1:
@@ -100,13 +102,13 @@ def flush(tree):
             logging.error(e)
 
 def main():
-    result={}
+    result=collections.OrderedDict()
     for i in range(FIRST,LAST):
         logging.info("Reading notice %d", i)
         notice = read(i)
         if notice is not None:
             result["53Fi"+str(i)] = notice
-        if i % 25 is 0:
+        if i % 25 is 0 or i == LAST:
             flush(result)
 
 if __name__ == "__main__":
