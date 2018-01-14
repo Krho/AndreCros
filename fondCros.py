@@ -22,6 +22,7 @@ DATE_REGEX = "[0-9]+\.[0-9]+\.[0-9]+"
 
 def mapping(s):
     map = {
+        u"Auteur(s) :": "authors",
         u"Type document :": "type",
         u"Technique :": "technique",
         u"Format :": "format",
@@ -71,7 +72,7 @@ def read(i):
         for i in range(0, len(spans)):
             if i == 0:
                 result["description"] = text(spans[i])
-            elif i < len(spans)-1 and spans[i]["class"][0] == "titre" and spans[i+1]["class"][0] == "result":
+            elif i < len(spans)-1 and spans[i]["class"][0] == "titre":
                 if "Format :" == text(spans[i]):
                     formats = re.split(" x ", text(spans[i+1]).strip(" cm"), flags=re.IGNORECASE)
                     if formats is not None and len(formats) > 1:
