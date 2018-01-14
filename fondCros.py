@@ -1,5 +1,6 @@
 # coding: utf-8
 import bs4
+import codecs
 import urllib
 import re
 import logging
@@ -63,8 +64,11 @@ def read(i):
 
 def flush(tree):
     logging.info("Writing")
-    with open ("tree.json", "w") as data:
-        json.dump(tree, data, indent=2)
+    with codecs.open("tree.json", "w", encoding="utf-8") as data:
+        try:
+            json.dump(tree, data, indent=2, ensure_ascii=False)
+        except BaseException as e:
+            logging.error(e)
 
 def main():
     result={}
