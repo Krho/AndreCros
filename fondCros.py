@@ -70,10 +70,15 @@ def read(i):
     result["title"]=parts[1]
     m = re.search(DATE_REGEX, parts[1])
     if m is not None:
-        p = re.split("\.",m.group(0))
-        result["day"]=twodigits(p[0])
-        result["month"]=twodigits(p[1])
-        result["year"]=p[2] if len(p[2]) == 4 else "19"+p[2]
+        if m.group(0) == "15.16.17": #15.16.17.18/10/62
+            result["day"]="15"
+            result["month"]="10"
+            result["year"]="1962"
+        else:
+            p = re.split("\.",m.group(0))
+            result["day"]=twodigits(p[0])
+            result["month"]=twodigits(p[1])
+            result["year"]=p[2] if len(p[2]) == 4 else "19"+p[2]
     spans = content.find_all('span')
     if spans is not None:
         for i in range(0, len(spans)):
