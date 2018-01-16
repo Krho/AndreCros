@@ -119,8 +119,7 @@ def main():
 
 def reverse():
     input_dict = json.loads(open("tree.json").read())
-    result = {}
-    i=0
+    result = collections.OrderedDict()
     for notice in input_dict:
         for key, value in input_dict[notice].items():
             if type(value) is list:
@@ -136,8 +135,11 @@ def reverse():
                         result[key].append(value)
                 else:
                     result[key]=[value]
+    for key in result:
+        result[key] = sorted(result[key])
     flush(result, "reverse")
 
 
 if __name__ == "__main__":
     main()
+    reverse()
