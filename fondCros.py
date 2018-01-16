@@ -93,9 +93,9 @@ def read(i):
                     result[mapping(text(spans[i]))] = text(spans[i+1])
     return result
 
-def flush(tree):
+def flush(tree, fileName="tree"):
     logging.info("Writing")
-    with codecs.open("tree.json", "w", encoding="utf-8") as data:
+    with codecs.open(fileName+".json", "w", encoding="utf-8") as data:
         try:
             json.dump(tree, data, indent=2, ensure_ascii=False)
         except BaseException as e:
@@ -110,6 +110,28 @@ def main():
             result["53Fi"+str(i)] = notice
         if i % 25 is 0 or i == LAST:
             flush(result)
+
+def reverse():
+    input_dict = json.loads(open("tree.json").read())
+    result = {}
+    i=0
+    for notice in input_dict:
+        for key, value in input_dict[notice].items():
+            if type(value) is list:
+                if key in result:
+                    for val in value:
+                        if val not in result[key]:
+                            result[val].append(key)
+                    else:
+                        result[key]=value
+            else:
+                if key in result:
+                    if value not in result[key]:
+                        result[key].append(value)
+                else:
+                    result[key]=[value]
+    flush(result, "reverse")
+
 
 if __name__ == "__main__":
     main()
