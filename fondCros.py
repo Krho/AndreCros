@@ -47,12 +47,18 @@ def mapping(s):
 def text(s):
     return unicode(s.string).strip()
 
+def twodigits(s):
+    return ("0"+s) if len(s) == 1 else s
+
 def read(i):
     sock = urllib.urlopen(NOTICE_URL_PREFIX+str(i)+NOTICE_URL_SUFFIX)
     htmlSource = sock.read()
     sock.close()
     soup = BeautifulSoup(htmlSource, 'html.parser', parse_only=SoupStrainer(id=NOTICE_ID))
     content = soup.find(id=NOTICE_ID)
+    if content is None:
+        logging.warn("Unable to download notice %d", i)
+        return None
     result={}
     # title
     title = content.find_all('p')[1].string
@@ -64,10 +70,15 @@ def read(i):
     result["title"]=parts[1]
     m = re.search(DATE_REGEX, parts[1])
     if m is not None:
-        p = re.split("\.",m.group(0))
-        result["day"]=p[0]
-        result["month"]=p[1]
-        result["year"]="19"+p[2]
+        if m.group(0) == "15.16.17": #15.16.17.18/10/62
+            result["day"]="15"
+            result["month"]="10"
+            result["year"]="1962"
+        else:
+            p = re.split("\.",m.group(0))
+            result["day"]=twodigits(p[0])
+            result["month"]=twodigits(p[1])
+            result["year"]=p[2] if len(p[2]) == 4 else "19"+p[2]
     spans = content.find_all('span')
     if spans is not None:
         for i in range(0, len(spans)):
@@ -75,7 +86,7 @@ def read(i):
                 result["description"] = text(spans[i])
             elif i < len(spans)-1 and spans[i]["class"][0] == "titre":
                 if "Format :" == text(spans[i]):
-                    formats = re.split(" x ", text(spans[i+1]).strip(" cm"), flags=re.IGNORECASE)
+                    formats = re.split("x", text(spans[i+1]).replace("cm", "").replace(" ", ""), flags=re.IGNORECASE)
                     if formats is not None and len(formats) > 1:
                         result["height"] = formats[0]
                         result["width"] = formats[1]
@@ -84,7 +95,7 @@ def read(i):
                 elif "Plan de classement :" == text(spans[i]):
                     order = re.split(">", text(spans[i+1]))
                     if len(order)>2:
-                        result[mapping(text(spans[i]))] = re.split(">", text(spans[i+1]))[-2].strip()
+                        result[mapping(text(spans[i]))] = re.split(">", text(spans[i+1]))[-2].strip().rstrip(">")
                     else:
                         result[mapping(text(spans[i]))] = text(spans[i+1])
                 elif "Termes d'indexation :" == text(spans[i]):
@@ -113,8 +124,7 @@ def main():
 
 def reverse():
     input_dict = json.loads(open("tree.json").read())
-    result = {}
-    i=0
+    result = collections.OrderedDict()
     for notice in input_dict:
         for key, value in input_dict[notice].items():
             if type(value) is list:
@@ -130,8 +140,11 @@ def reverse():
                         result[key].append(value)
                 else:
                     result[key]=[value]
+    for key in result:
+        result[key] = sorted(result[key])
     flush(result, "reverse")
 
 
 if __name__ == "__main__":
     main()
+    reverse()
