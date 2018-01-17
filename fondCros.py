@@ -6,7 +6,9 @@ import urllib
 import re
 import logging
 import json
+import pywikibot
 from bs4 import BeautifulSoup, SoupStrainer
+from pywikibot.specialbots import UploadRobot
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,8 +20,13 @@ IMAGE_URL_SUFFIX = ".JPG"
 NOTICE_URL_PREFIX = "http://basededonnees.archives.toulouse.fr/4DCGI/Web_VoirLaNotice/34_01/53Fi"
 NOTICE_URL_SUFFIX = "/ILUMP26723"
 NOTICE_ID = "tableau_notice"
+NOTICE_PREFIX = "53Fi"
 
 DATE_REGEX = "[0-9]+\.[0-9]+\.[0-9]+"
+
+COMMONS = pywikibot.getSite(u'commons', u'commons')
+
+input_dict = json.loads(open("tree.json").read())
 
 def mapping(s):
     map = {
@@ -112,7 +119,6 @@ def main():
             flush(result)
 
 def reverse():
-    input_dict = json.loads(open("tree.json").read())
     result = {}
     i=0
     for notice in input_dict:
@@ -132,6 +138,17 @@ def reverse():
                     result[key]=[value]
     flush(result, "reverse")
 
+def upload(i):
+    url_image = IMAGE_URL_PREFIX + str(i) + IMAGE_URL_SUFFIX
+    logging.info(url_image)
+#    descr = str(input_dict[NOTICE_PREFIX+str(i)])
+    descr = "Test"
+    bot = UploadRobot(url=url_image, description=descr,
+        useFilename=input_dict[NOTICE_PREFIX+str(i)]["title"],
+        summary="#AndreCros : test",
+        targetSite=COMMONS)
+    bot.run()
+
 
 if __name__ == "__main__":
-    main()
+    upload(394)
