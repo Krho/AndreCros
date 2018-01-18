@@ -1,25 +1,29 @@
 # coding: utf-8
-import bs4
+
 import codecs
 import collections
-import urllib
 import re
 import logging
 import json
+import sys
+
 from bs4 import BeautifulSoup, SoupStrainer
+import requests
+
+
+PY3 = sys.version_info >= (3, )
 
 logging.basicConfig(level=logging.INFO)
 
 FIRST = 1
 LAST = 7118
 
-IMAGE_URL_PREFIX = "http://basededonnees.archives.toulouse.fr/images/docfig/53Fi/FRAC31555_53Fi"
-IMAGE_URL_SUFFIX = ".JPG"
-NOTICE_URL_PREFIX = "http://basededonnees.archives.toulouse.fr/4DCGI/Web_VoirLaNotice/34_01/53Fi"
-NOTICE_URL_SUFFIX = "/ILUMP26723"
+IMAGE_URL = "http://basededonnees.archives.toulouse.fr/images/docfig/53Fi/FRAC31555_53Fi{}.JPG"
+NOTICE_URL = "http://basededonnees.archives.toulouse.fr/4DCGI/Web_VoirLaNotice/34_01/53Fi{}/ILUMP26723"
 NOTICE_ID = "tableau_notice"
 
 DATE_REGEX = "[0-9]+\.[0-9]+\.[0-9]+"
+
 
 def mapping(s):
     map = {
@@ -44,16 +48,21 @@ def mapping(s):
     }
     return map.get(s, s)
 
+
 def text(s):
-    return unicode(s.string).strip()
+    text_value = s.string.strip()
+    if not PY3:
+        text_value = unicode(s.string).strip()
+    return text_value
+
 
 def twodigits(s):
-    return ("0"+s) if len(s) == 1 else s
+    return s.zfill(2)
+
 
 def read(i):
-    sock = urllib.urlopen(NOTICE_URL_PREFIX+str(i)+NOTICE_URL_SUFFIX)
-    htmlSource = sock.read()
-    sock.close()
+    response = requests.get(NOTICE_URL.format(i))
+    htmlSource = response.text
     soup = BeautifulSoup(htmlSource, 'html.parser', parse_only=SoupStrainer(id=NOTICE_ID))
     content = soup.find(id=NOTICE_ID)
     if content is None:
@@ -104,6 +113,7 @@ def read(i):
                     result[mapping(text(spans[i]))] = text(spans[i+1])
     return result
 
+
 def flush(tree, fileName="tree"):
     logging.info("Writing")
     with codecs.open(fileName+".json", "w", encoding="utf-8") as data:
@@ -111,6 +121,7 @@ def flush(tree, fileName="tree"):
             json.dump(tree, data, indent=2, ensure_ascii=False)
         except BaseException as e:
             logging.error(e)
+
 
 def main():
     result=collections.OrderedDict()
@@ -121,6 +132,7 @@ def main():
             result["53Fi"+str(i)] = notice
         if i % 25 is 0 or i == LAST:
             flush(result)
+
 
 def reverse():
     input_dict = json.loads(open("tree.json").read())
