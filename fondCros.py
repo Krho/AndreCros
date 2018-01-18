@@ -144,7 +144,30 @@ def reverse():
         result[key] = sorted(result[key])
     flush(result, "reverse")
 
+descr_template = u"{{Artwork|ID={{Archives municipales de Toulouse - FET link|}}|artist={{Creator:André Cros}}|credit line=|date=|location=|description={{fr|}}|dimensions={{Size|cm||}}|gallery={{Institution:Archives municipales de Toulouse}}|medium={{Technique|photograph}}|object history=|permission={{CC-by-SA-4.0}}|references=|source={{Fonds André Cros - Archives municipales de Toulouse}}|title={{fr|}}}}"
+
+def description(i):
+    input_dict = json.loads(open("tree.json").read())
+    id_number = "53Fi"+str(i)
+    notice = input_dict[id_number]
+    result = descr_template[:59]+id_number+descr_template[59:110]
+    if "year" in notice:
+        result = result + notice["year"]
+    if "month" in notice:
+        result = result + "-" + notice["month"]
+    if "day" in notice:
+        result = result + "-" + notice["day"]
+    result = result + descr_template[110:138] + notice["description"]
+    if "observation" in notice:
+        result = result + "\n Observation: " + notice["observation"]
+    result = result + descr_template[138:160]
+    if "height" in notice and "width" in notice :
+        result = result + notice["height"] + "|" + notice["width"]
+    else:
+        result = result + "|"
+    result = result + descr_template[163:270] + notice["origin"] + descr_template[270:385] + notice["title"] + descr_template[385:]
+    return result
+
 
 if __name__ == "__main__":
-    main()
-    reverse()
+    print description(1761)
