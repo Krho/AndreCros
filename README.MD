@@ -6,6 +6,15 @@ This project grabs metadata of [André Cros](https://www.wikidata.org/wiki/Q4719
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
 
+
+## Configuration of the bot
+Edit `bot_config.py` with `USER` and `PASS`
+
+```python
+USER = 'MyWikimediaLogin'
+PASS = 'MyWikimediaPassword'
+```
+
 ## See also
 
 * [Project page on Wikimedia Meta](https://meta.wikimedia.org/wiki/Wikimédia_France/Toulouse/André_Cros)

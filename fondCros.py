@@ -1,24 +1,25 @@
 # coding: utf-8
-import bs4
+
 import codecs
 import collections
-import urllib
 import re
 import logging
 import json
-import pywikibot
 from bs4 import BeautifulSoup, SoupStrainer
-from pywikibot.specialbots import UploadRobot
+import sys
+
+from bs4 import BeautifulSoup, SoupStrainer
+import requests
+
+PY3 = sys.version_info >= (3, )
 
 logging.basicConfig(level=logging.INFO)
 
 FIRST = 1
 LAST = 7118
 
-IMAGE_URL_PREFIX = "http://basededonnees.archives.toulouse.fr/images/docfig/53Fi/FRAC31555_53Fi"
-IMAGE_URL_SUFFIX = ".JPG"
-NOTICE_URL_PREFIX = "http://basededonnees.archives.toulouse.fr/4DCGI/Web_VoirLaNotice/34_01/53Fi"
-NOTICE_URL_SUFFIX = "/ILUMP26723"
+IMAGE_URL = "http://basededonnees.archives.toulouse.fr/images/docfig/53Fi/FRAC31555_53Fi{}.JPG"
+NOTICE_URL = "http://basededonnees.archives.toulouse.fr/4DCGI/Web_VoirLaNotice/34_01/53Fi{}/ILUMP26723"
 NOTICE_ID = "tableau_notice"
 NOTICE_PREFIX = "53Fi"
 
@@ -51,15 +52,26 @@ def mapping(s):
     }
     return map.get(s, s)
 
+
 def text(s):
-    return unicode(s.string).strip()
+    text_value = s.string.strip()
+    if not PY3:
+        text_value = unicode(s.string).strip()
+    return text_value
+
+
+def twodigits(s):
+    return s.zfill(2)
+
 
 def read(i):
-    sock = urllib.urlopen(NOTICE_URL_PREFIX+str(i)+NOTICE_URL_SUFFIX)
-    htmlSource = sock.read()
-    sock.close()
+    response = requests.get(NOTICE_URL.format(i))
+    htmlSource = response.text
     soup = BeautifulSoup(htmlSource, 'html.parser', parse_only=SoupStrainer(id=NOTICE_ID))
     content = soup.find(id=NOTICE_ID)
+    if content is None:
+        logging.warn("Unable to download notice %d", i)
+        return None
     result={}
     # title
     title = content.find_all('p')[1].string
@@ -71,10 +83,15 @@ def read(i):
     result["title"]=parts[1]
     m = re.search(DATE_REGEX, parts[1])
     if m is not None:
-        p = re.split("\.",m.group(0))
-        result["day"]=p[0]
-        result["month"]=p[1]
-        result["year"]="19"+p[2]
+        if m.group(0) == "15.16.17": #15.16.17.18/10/62
+            result["day"]="15"
+            result["month"]="10"
+            result["year"]="1962"
+        else:
+            p = re.split("\.",m.group(0))
+            result["day"]=twodigits(p[0])
+            result["month"]=twodigits(p[1])
+            result["year"]=p[2] if len(p[2]) == 4 else "19"+p[2]
     spans = content.find_all('span')
     if spans is not None:
         for i in range(0, len(spans)):
@@ -82,7 +99,7 @@ def read(i):
                 result["description"] = text(spans[i])
             elif i < len(spans)-1 and spans[i]["class"][0] == "titre":
                 if "Format :" == text(spans[i]):
-                    formats = re.split(" x ", text(spans[i+1]).strip(" cm"), flags=re.IGNORECASE)
+                    formats = re.split("x", text(spans[i+1]).replace("cm", "").replace(" ", ""), flags=re.IGNORECASE)
                     if formats is not None and len(formats) > 1:
                         result["height"] = formats[0]
                         result["width"] = formats[1]
@@ -91,7 +108,7 @@ def read(i):
                 elif "Plan de classement :" == text(spans[i]):
                     order = re.split(">", text(spans[i+1]))
                     if len(order)>2:
-                        result[mapping(text(spans[i]))] = re.split(">", text(spans[i+1]))[-2].strip()
+                        result[mapping(text(spans[i]))] = re.split(">", text(spans[i+1]))[-2].strip().rstrip(">")
                     else:
                         result[mapping(text(spans[i]))] = text(spans[i+1])
                 elif "Termes d'indexation :" == text(spans[i]):
@@ -100,6 +117,7 @@ def read(i):
                     result[mapping(text(spans[i]))] = text(spans[i+1])
     return result
 
+
 def flush(tree, fileName="tree"):
     logging.info("Writing")
     with codecs.open(fileName+".json", "w", encoding="utf-8") as data:
@@ -107,6 +125,7 @@ def flush(tree, fileName="tree"):
             json.dump(tree, data, indent=2, ensure_ascii=False)
         except BaseException as e:
             logging.error(e)
+
 
 def main():
     result=collections.OrderedDict()
@@ -118,9 +137,9 @@ def main():
         if i % 25 is 0 or i == LAST:
             flush(result)
 
+
 def reverse():
-    result = {}
-    i=0
+    result = collections.OrderedDict()
     for notice in input_dict:
         for key, value in input_dict[notice].items():
             if type(value) is list:
@@ -136,8 +155,11 @@ def reverse():
                         result[key].append(value)
                 else:
                     result[key]=[value]
+    for key in result:
+        result[key] = sorted(result[key])
     flush(result, "reverse")
 
+<<<<<<< HEAD
 def upload(i):
     url_image = IMAGE_URL_PREFIX + str(i) + IMAGE_URL_SUFFIX
     logging.info(url_image)
@@ -149,6 +171,30 @@ def upload(i):
         targetSite=COMMONS)
     bot.run()
 
+descr_template = u"{{Artwork|ID={{Archives municipales de Toulouse - FET link|}}|artist={{Creator:André Cros}}|credit line=|date=|location=|description={{fr|}}|dimensions={{Size|cm||}}|gallery={{Institution:Archives municipales de Toulouse}}|medium={{Technique|photograph}}|object history=|permission={{CC-by-SA-4.0}}|references=|source={{Fonds André Cros - Archives municipales de Toulouse}}|title={{fr|}}}}"
+
+def description(i):
+    input_dict = json.loads(open("tree.json").read())
+    id_number = "53Fi"+str(i)
+    notice = input_dict[id_number]
+    result = descr_template[:59]+id_number+descr_template[59:110]
+    if "year" in notice:
+        result = result + notice["year"]
+    if "month" in notice:
+        result = result + "-" + notice["month"]
+    if "day" in notice:
+        result = result + "-" + notice["day"]
+    result = result + descr_template[110:138] + notice["description"]
+    if "observation" in notice:
+        result = result + "\n Observation: " + notice["observation"]
+    result = result + descr_template[138:160]
+    if "height" in notice and "width" in notice :
+        result = result + notice["height"] + "|" + notice["width"]
+    else:
+        result = result + "|"
+    result = result + descr_template[163:270] + notice["origin"] + descr_template[270:385] + notice["title"] + descr_template[385:]
+    return result
+
 
 if __name__ == "__main__":
-    upload(394)
+    print description(1761)
