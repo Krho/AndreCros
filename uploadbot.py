@@ -22,7 +22,7 @@ IMAGE_URL = "http://basededonnees.archives.toulouse.fr/images/docfig/53Fi/FRAC31
 
 input_dict = json.loads(open("tree.json").read())
 
-descr_template = u"{{Artwork\n|ID={{Archives municipales de Toulouse - FET link|}}\n|artist={{Creator:André Cros}}\n|credit line=\n|date=\n|location=\n|description={{fr|}}\n|dimensions={{Size|cm|}}\n|gallery={{Institution:Archives municipales de Toulouse}}\n|medium={{Technique|photograph}}\n|object history=\n|permission={{CC-by-SA-4.0}}\n|references=\n|source={{Fonds André Cros - Archives municipales de Toulouse}}\n|title={{fr|}}\n}}"
+descr_template = u"{{Artwork\n|ID={{Archives municipales de Toulouse - FET link|}}\n|artist={{Creator:André Cros}}\n|credit line=\n|date=\n|location=\n|description={{fr|}}\n|dimensions={{Size|cm|}}\n|gallery={{Institution:Archives municipales de Toulouse}}\n|medium={{Technique|photograph}}\n|object history={{fr|}}\n|permission={{CC-by-SA-4.0}}\n|references=\n|source={{Fonds André Cros - Archives municipales de Toulouse}}\n|title={{fr|}}\n}}"
 
 
 def description(id_number):
@@ -42,7 +42,7 @@ def description(id_number):
         result = result + notice["height"] + "|" + notice["width"]
     else:
         result = result + "|"
-    result = result + descr_template[169:279] + notice["origin"] + descr_template[279:398] + notice["title"] + descr_template[398:]
+    result = result + descr_template[169:284] + notice["origin"] + descr_template[284:405] + notice["title"] + descr_template[405:]
     # Categories
     if "order" in notice:
         result = result + CAT_NAME.format(notice["order"]).replace(">","-")
