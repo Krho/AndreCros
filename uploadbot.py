@@ -39,7 +39,7 @@ def description(id_number):
         result = result + "\nObservation: " + notice["observation"]
     result = result + descr_template[144:169]
     if "height" in notice and "width" in notice :
-        result = result + notice["height"] + "|" + notice["width"]
+        result = result + notice["height"].replace(",",".") + "|" + notice["width"].replace(",",".")
     else:
         result = result + "|"
     result = result + descr_template[169:284] + notice["origin"] + descr_template[284:405] + notice["title"] + descr_template[405:]
@@ -82,8 +82,8 @@ def upload(site, id_number):
 def main():
     commons = mwclient.Site('commons.wikimedia.org')
     commons.login(username=bot_config.USER, password=bot_config.PASS)
-    first = 2501
-    last = 2522
+    first = 442
+    last = 442
     for i in range(first,last+1):
         id_number = "53Fi"+str(i)
         upload(commons, id_number)
