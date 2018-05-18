@@ -1,2 +1,6 @@
+apicache/
+pywikibot.lwp
+throttle.ctrl
 bot_config.py
 user-config.py
+*.pyc

@@ -5,11 +5,11 @@ import collections
 import re
 import logging
 import json
+from bs4 import BeautifulSoup, SoupStrainer
 import sys
 
 from bs4 import BeautifulSoup, SoupStrainer
 import requests
-
 
 PY3 = sys.version_info >= (3, )
 
@@ -21,9 +21,13 @@ LAST = 7118
 IMAGE_URL = "http://basededonnees.archives.toulouse.fr/images/docfig/53Fi/FRAC31555_53Fi{}.JPG"
 NOTICE_URL = "http://basededonnees.archives.toulouse.fr/4DCGI/Web_VoirLaNotice/34_01/53Fi{}/ILUMP26723"
 NOTICE_ID = "tableau_notice"
+NOTICE_PREFIX = "53Fi"
 
 DATE_REGEX = "[0-9]+\.[0-9]+\.[0-9]+"
 
+COMMONS = pywikibot.getSite(u'commons', u'commons')
+
+input_dict = json.loads(open("tree.json").read())
 
 def mapping(s):
     map = {
@@ -135,7 +139,6 @@ def main():
 
 
 def reverse():
-    input_dict = json.loads(open("tree.json").read())
     result = collections.OrderedDict()
     for notice in input_dict:
         for key, value in input_dict[notice].items():
@@ -155,6 +158,18 @@ def reverse():
     for key in result:
         result[key] = sorted(result[key])
     flush(result, "reverse")
+
+<<<<<<< HEAD
+def upload(i):
+    url_image = IMAGE_URL_PREFIX + str(i) + IMAGE_URL_SUFFIX
+    logging.info(url_image)
+#    descr = str(input_dict[NOTICE_PREFIX+str(i)])
+    descr = "Test"
+    bot = UploadRobot(url=url_image, description=descr,
+        useFilename=input_dict[NOTICE_PREFIX+str(i)]["title"],
+        summary="#AndreCros : test",
+        targetSite=COMMONS)
+    bot.run()
 
 descr_template = u"{{Artwork|ID={{Archives municipales de Toulouse - FET link|}}|artist={{Creator:André Cros}}|credit line=|date=|location=|description={{fr|}}|dimensions={{Size|cm||}}|gallery={{Institution:Archives municipales de Toulouse}}|medium={{Technique|photograph}}|object history=|permission={{CC-by-SA-4.0}}|references=|source={{Fonds André Cros - Archives municipales de Toulouse}}|title={{fr|}}}}"
 
