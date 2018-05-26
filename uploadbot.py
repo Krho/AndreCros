@@ -39,11 +39,7 @@ def description(id_number):
         result = result + "\nObservation: " + notice["observation"]
     result = result + descr_template[144:169]
     if "height" in notice and "width" in notice :
-<<<<<<< HEAD
         result = result + notice["height"].replace(',','.') + "|" + notice["width"].replace(',','.')
-=======
-        result = result + notice["height"].replace(",",".") + "|" + notice["width"].replace(",",".")
->>>>>>> cf21f1e720c160ba9a3b191e88bb0c808afd2b0e
     else:
         result = result + "|"
     result = result + descr_template[169:284] + notice["origin"] + descr_template[284:405] + notice["title"] + descr_template[405:]
